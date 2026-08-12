@@ -1,9 +1,7 @@
 export const USE_SUPABASE = true;
 
-// IMPORTANT: base project URL only.
-// Do NOT append /rest/v1/ — the supabase-js client adds that itself.
 export const SUPABASE_URL =
-    'https://fqsvdyfrwdqidakqtwzi.supabase.co';
+    'https://fqsvdyfrwdqidaktqwzi.supabase.co';
 
 export const SUPABASE_PUBLISHABLE_KEY =
     'sb_publishable_2hoOq8LdqQYgeNhxctYMPQ_gd0oqByV';

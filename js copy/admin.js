@@ -57,9 +57,7 @@ function render() {
 
   document.querySelectorAll('.unit-status').forEach(select => {
     select.addEventListener('change', event => {
-      // Supabase unit ids are UUIDs (text) — Number() would make them NaN
-      // and the update would silently match zero rows.
-      pendingChanges.set(event.target.dataset.unitId, event.target.value);
+      pendingChanges.set(Number(event.target.dataset.unitId), event.target.value);
       $('saveMessage').textContent = `${pendingChanges.size} unsaved change${pendingChanges.size === 1 ? '' : 's'}.`;
     });
   });

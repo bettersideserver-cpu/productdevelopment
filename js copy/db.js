@@ -75,11 +75,10 @@ export async function getUnits(floor = null) {
 export async function saveUnitStatuses(changes) {
   if (!USE_SUPABASE) {
     const units = getDemoUnits();
-    // Keys stringified so numeric demo ids and uuid Supabase ids both match.
-    const byId = new Map(units.map(unit => [String(unit.id), unit]));
+    const byId = new Map(units.map(unit => [unit.id, unit]));
 
     for (const change of changes) {
-      const unit = byId.get(String(change.id));
+      const unit = byId.get(change.id);
       if (unit) unit.status_id = change.status_id;
     }
 
