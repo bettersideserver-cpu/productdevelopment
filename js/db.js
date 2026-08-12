@@ -105,10 +105,21 @@ export async function saveUnitStatuses(changes) {
   return results;
 }
 
+// status_categories.id is a TEXT primary key with no database default,
+// so the client must always supply one. Turns "Booking Hold" -> "booking-hold".
+function slugifyStatusId(name) {
+  return (
+    String(name)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') || `status-${Date.now()}`
+  );
+}
+
 export async function addStatus(name, color) {
   if (!USE_SUPABASE) {
     const statuses = getDemoStatuses();
-    const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `status-${Date.now()}`;
+    const id = slugifyStatusId(name);
     const status = { id, name, color, active: true };
     statuses.push(status);
     localStorage.setItem(STATUSES_KEY, JSON.stringify(statuses));
@@ -117,13 +128,32 @@ export async function addStatus(name, color) {
   }
 
   const sortOrder = (await getStatuses()).length;
+
+  let id = slugifyStatusId(name);
+
+  // "id" and "name" are both UNIQUE. If this status already exists, make the
+  // id unique instead of throwing a raw 409 at the user.
+  const { data: existing } = await supabaseClient
+    .from('status_categories')
+    .select('id')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (existing) id = `${id}-${Date.now().toString(36)}`;
+
   const { data, error } = await supabaseClient
     .from('status_categories')
-    .insert({ name, color, active: true, sort_order: sortOrder })
+    .insert({ id, name, color, active: true, sort_order: sortOrder })
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    if (error.code === '23505') {
+      throw new Error(`A status named "${name}" already exists.`);
+    }
+    throw error;
+  }
+
   return data;
 }
 
