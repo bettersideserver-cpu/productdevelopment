@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Floor 03 — Inventory Demo</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <main class="shell floor-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">DEMO BUILDING</p>
+        <h1>Second Floor</h1>
+        <p class="muted">Hover a unit to see its live inventory information.</p>
+      </div>
+      <div class="top-actions">
+        <a class="button secondary" href="index.html">Floors</a>
+        <a class="button secondary" href="admin.html">Admin</a>
+      </div>
+    </header>
+
+    <section class="floor-stage">
+      <div class="floor-meta">
+        <span id="connectionStatus" class="status-pill">Demo Mode</span>
+        <span id="floorCount" class="muted"></span>
+      </div>
+      <div class="svg-wrap" id="floorCanvas">
+        <svg id="floorplan" viewBox="0 0 1000 620" role="img" aria-label="Second floor dummy floor plan">
+          <rect class="background" x="0" y="0" width="1000" height="620" rx="18"/>
+          <text class="svg-title" x="500" y="38" text-anchor="middle">SECOND FLOOR</text>
+
+          <g class="unit-group"><path id="F03_APARTMENT_C301" d="M70 100 H290 V270 H70 Z"/><text x="180" y="190">C301</text></g>
+          <g class="unit-group"><path id="F03_APARTMENT_C302" d="M320 100 H540 V270 H320 Z"/><text x="430" y="190">C302</text></g>
+          <g class="unit-group"><path id="F03_OFFICE_C303" d="M570 100 H930 V270 H570 Z"/><text x="750" y="190">C303</text></g>
+          <g class="unit-group"><path id="F03_APARTMENT_C304" d="M180 330 H820 V520 H180 Z"/><text x="500" y="430">C304</text></g>
+        </svg>
+      </div>
+    </section>
+  </main>
+  <div id="unitTooltip" class="unit-tooltip" hidden></div>
+  <script type="module">
+    import { initFloorPage } from './js/floor.js';
+    initFloorPage('03', 'Second Floor');
+  </script>
+</body>
+</html>

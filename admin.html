@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin — Inventory Demo</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">INVENTORY ADMIN</p>
+        <h1>Unit Management</h1>
+        <p class="muted">Change statuses and save. Open a floor page in another tab to see live updates.</p>
+      </div>
+      <a class="button secondary" href="index.html">Floor Selection</a>
+    </header>
+
+    <section class="admin-toolbar">
+      <label>Search
+        <input id="searchInput" type="search" placeholder="Unit, SVG ID or type...">
+      </label>
+      <label>Floor
+        <select id="floorFilter">
+          <option value="">All floors</option>
+          <option value="01">01</option>
+          <option value="02">02</option>
+          <option value="03">03</option>
+        </select>
+      </label>
+      <label>Status
+        <select id="statusFilter"><option value="">All statuses</option></select>
+      </label>
+      <button id="addStatusButton" class="button secondary">+ Add Status</button>
+      <button id="saveButton" class="button primary">Save Changes</button>
+    </section>
+
+    <div id="saveMessage" class="save-message" aria-live="polite"></div>
+
+    <section class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Floor</th>
+            <th>Unit</th>
+            <th>Type</th>
+            <th>SVG ID</th>
+            <th>Status</th>
+            <th>Area</th>
+          </tr>
+        </thead>
+        <tbody id="inventoryBody"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <dialog id="statusDialog">
+    <form method="dialog" id="statusForm" class="dialog-form">
+      <h2>Add Status</h2>
+      <label>Status name
+        <input id="newStatusName" required placeholder="e.g. Booking Hold">
+      </label>
+      <label>Color
+        <input id="newStatusColor" type="color" value="#7c3aed">
+      </label>
+      <div class="dialog-actions">
+        <button class="button secondary" value="cancel">Cancel</button>
+        <button class="button primary" value="default">Add Status</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module">
+    import { initAdminPage } from './js/admin.js';
+    initAdminPage();
+  </script>
+</body>
+</html>

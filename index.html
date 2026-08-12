@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inventory Demo — Building</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">REAL ESTATE INVENTORY</p>
+        <h1>Demo Building</h1>
+        <p class="muted">Select a floor to open the interactive SVG inventory.</p>
+      </div>
+      <a class="button secondary" href="admin.html">Open Admin</a>
+    </header>
+
+    <section class="floor-grid">
+      <a class="floor-card" href="floor-01.html">
+        <span>01</span><strong>Ground Floor</strong><small>4 units</small>
+      </a>
+      <a class="floor-card" href="floor-02.html">
+        <span>02</span><strong>First Floor</strong><small>4 units</small>
+      </a>
+      <a class="floor-card" href="floor-03.html">
+        <span>03</span><strong>Second Floor</strong><small>4 units</small>
+      </a>
+    </section>
+
+    <section class="legend">
+      <div class="legend-title">UNIT STATUS</div>
+      <div id="statusLegend" class="status-legend">
+        <span class="muted">Loading statuses...</span>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { initDatabase, getStatuses } from './js/db.js';
+
+    const legend = document.getElementById('statusLegend');
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      }[char]));
+    }
+
+    async function loadLegend() {
+      try {
+        await initDatabase();
+        const statuses = await getStatuses();
+
+        if (!statuses.length) {
+          legend.innerHTML = '<span class="muted">No active statuses.</span>';
+          return;
+        }
+
+        legend.innerHTML = statuses.map(status => `
+          <div class="legend-item">
+            <i class="dot" style="background:${escapeHtml(status.color)}"></i>
+            <span>${escapeHtml(status.name)}</span>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error(error);
+        legend.innerHTML = '<span class="muted">Unable to load statuses.</span>';
+      }
+    }
+
+    loadLegend();
+  </script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Floor 01 — Inventory Demo</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <main class="shell floor-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">DEMO BUILDING</p>
+        <h1>Ground Floor</h1>
+        <p class="muted">Hover a unit to see its live inventory information.</p>
+      </div>
+      <div class="top-actions">
+        <a class="button secondary" href="index.html">Floors</a>
+        <a class="button secondary" href="admin.html">Admin</a>
+      </div>
+    </header>
+
+    <section class="floor-stage">
+      <div class="floor-meta">
+        <span id="connectionStatus" class="status-pill">Demo Mode</span>
+        <span id="floorCount" class="muted"></span>
+      </div>
+
+      <div class="svg-wrap" id="floorCanvas">
+        <svg id="floorplan" viewBox="0 0 1000 620" role="img" aria-label="Ground floor dummy floor plan">
+          <rect class="background" x="0" y="0" width="1000" height="620" rx="18"/>
+          <text class="svg-title" x="500" y="38" text-anchor="middle">GROUND FLOOR</text>
+
+          <g class="unit-group">
+            <path id="F01_APARTMENT_A101" d="M80 100 H310 V270 H80 Z"/>
+            <text x="195" y="190">A101</text>
+          </g>
+          <g class="unit-group">
+            <path id="F01_APARTMENT_A102" d="M340 100 H570 V270 H340 Z"/>
+            <text x="455" y="190">A102</text>
+          </g>
+          <g class="unit-group">
+            <path id="F01_SHOP_S001" d="M600 100 H920 V270 H600 Z"/>
+            <text x="760" y="190">S001</text>
+          </g>
+          <g class="unit-group">
+            <path id="F01_SHOP_S002" d="M220 330 H780 V520 H220 Z"/>
+            <text x="500" y="430">S002</text>
+          </g>
+        </svg>
+      </div>
+    </section>
+  </main>
+
+  <div id="unitTooltip" class="unit-tooltip" hidden></div>
+
+  <script type="module">
+    import { initFloorPage } from './js/floor.js';
+    initFloorPage('01', 'Ground Floor');
+  </script>
+</body>
+</html>
