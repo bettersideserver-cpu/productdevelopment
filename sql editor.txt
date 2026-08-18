@@ -1,0 +1,200 @@
+-- ============================================================
+-- RUN THIS ENTIRE FILE IN THE SUPABASE SQL EDITOR
+-- Project: fqsvdyfrwdqidakqtwzi
+-- Fixes: (1) missing table GRANTs for anon  (2) anon write access
+-- ============================================================
+
+-- ------------------------------------------------------------
+-- 1. GRANTS
+-- RLS policies do nothing if the role has no table privileges.
+-- This is why every request returned:
+--   42501 "permission denied for table units"
+-- ------------------------------------------------------------
+grant usage on schema public to anon, authenticated;
+
+grant select on public.buildings          to anon, authenticated;
+grant select on public.floors             to anon, authenticated;
+grant select on public.status_categories  to anon, authenticated;
+grant select on public.units              to anon, authenticated;
+
+-- Prototype admin (admin.html has no login) needs write access:
+grant insert, update on public.status_categories to anon, authenticated;
+grant update          on public.units            to anon, authenticated;
+
+-- Make future tables work too (optional but handy):
+alter default privileges in schema public
+  grant select on tables to anon, authenticated;
+
+-- ------------------------------------------------------------
+-- 2. RLS POLICIES
+-- Reads stay open. Writes are opened to anon because the admin
+-- page is unauthenticated in this prototype.
+-- TIGHTEN THIS BEFORE REAL LAUNCH (see note at bottom).
+-- ------------------------------------------------------------
+alter table public.units              enable row level security;
+alter table public.status_categories  enable row level security;
+alter table public.floors             enable row level security;
+alter table public.buildings          enable row level security;
+
+drop policy if exists "public can read units" on public.units;
+create policy "public can read units"
+on public.units for select to anon, authenticated using (true);
+
+drop policy if exists "public can read statuses" on public.status_categories;
+create policy "public can read statuses"
+on public.status_categories for select to anon, authenticated using (active = true);
+
+drop policy if exists "public can read floors" on public.floors;
+create policy "public can read floors"
+on public.floors for select to anon, authenticated using (true);
+
+drop policy if exists "public can read buildings" on public.buildings;
+create policy "public can read buildings"
+on public.buildings for select to anon, authenticated using (true);
+
+-- Prototype write policies (replace the authenticated-only ones)
+drop policy if exists "authenticated can update units" on public.units;
+drop policy if exists "prototype can update units"     on public.units;
+create policy "prototype can update units"
+on public.units for update to anon, authenticated using (true) with check (true);
+
+drop policy if exists "authenticated can insert statuses" on public.status_categories;
+drop policy if exists "prototype can insert statuses"     on public.status_categories;
+create policy "prototype can insert statuses"
+on public.status_categories for insert to anon, authenticated with check (true);
+
+-- ------------------------------------------------------------
+-- 3. REALTIME
+-- Needed for the floor pages to update without a refresh.
+-- ------------------------------------------------------------
+alter table public.units replica identity full;
+
+do $$
+begin
+  begin
+    alter publication supabase_realtime add table public.units;
+  exception when duplicate_object then null;
+  end;
+end $$;
+
+-- ------------------------------------------------------------
+-- 4. VERIFY — should return your 4 statuses and 12 units
+-- ------------------------------------------------------------
+select count(*) as statuses from public.status_categories;
+select count(*) as units    from public.units;
+
+-- ------------------------------------------------------------
+-- WHEN YOU GO LIVE, run this to lock the admin down again:
+--
+--   revoke insert, update on public.status_categories from anon;
+--   revoke update          on public.units            from anon;
+--   drop policy "prototype can update units"     on public.units;
+--   drop policy "prototype can insert statuses"  on public.status_categories;
+--   create policy "authenticated can update units"
+--     on public.units for update to authenticated using (true) with check (true);
+--
+-- ...and add Supabase Auth login to admin.html.
+-- ------------------------------------------------------------
+
+
+
+
+
+
+-- ============================================================
+-- MIGRATION V2 — run the whole file in the Supabase SQL Editor
+-- Adds: carpet/super area, status deletion, SVG auto-sync support
+-- Safe to run more than once.
+-- ============================================================
+
+-- ------------------------------------------------------------
+-- 0. Remove the test row left over from debugging (if present)
+-- ------------------------------------------------------------
+delete from public.status_categories where id = 'temp-test';
+
+-- ------------------------------------------------------------
+-- 1. TWO AREA TYPES
+-- carpet_area = usable floor area inside walls
+-- super_area  = carpet + walls + share of common area
+-- The old single "area" column is kept so nothing breaks, and is
+-- backfilled into carpet_area.
+-- ------------------------------------------------------------
+alter table public.units add column if not exists carpet_area numeric;
+alter table public.units add column if not exists super_area  numeric;
+
+update public.units
+   set carpet_area = area
+ where carpet_area is null
+   and area is not null;
+
+-- Sensible starting point for super area (~1.35x carpet). Edit per unit later.
+update public.units
+   set super_area = round(carpet_area * 1.35)
+ where super_area is null
+   and carpet_area is not null;
+
+-- ------------------------------------------------------------
+-- 2. SVG AUTO-SYNC
+-- When you add a new <path id="F04_APARTMENT_D401"> to a floor page,
+-- the floor page inserts the missing unit itself. That needs INSERT.
+-- floor_id is nullable, so units can be created before a floors row.
+-- ------------------------------------------------------------
+grant insert on public.units  to anon, authenticated;
+grant insert on public.floors to anon, authenticated;
+
+drop policy if exists "prototype can insert units" on public.units;
+create policy "prototype can insert units"
+on public.units for insert to anon, authenticated with check (true);
+
+drop policy if exists "prototype can insert floors" on public.floors;
+create policy "prototype can insert floors"
+on public.floors for insert to anon, authenticated with check (true);
+
+-- ------------------------------------------------------------
+-- 3. STATUS DELETION
+-- Units reference status_categories, so the app reassigns every
+-- affected unit to a status you choose, then deletes the old one.
+-- ------------------------------------------------------------
+grant update, delete on public.status_categories to anon, authenticated;
+
+drop policy if exists "prototype can update statuses" on public.status_categories;
+create policy "prototype can update statuses"
+on public.status_categories for update to anon, authenticated using (true) with check (true);
+
+drop policy if exists "prototype can delete statuses" on public.status_categories;
+create policy "prototype can delete statuses"
+on public.status_categories for delete to anon, authenticated using (true);
+
+-- The 4 seeded statuses are protected from deletion so the app always
+-- has somewhere to reassign units to.
+alter table public.status_categories
+  add column if not exists is_system boolean not null default false;
+
+update public.status_categories
+   set is_system = true
+ where id in ('available', 'reserved', 'sold', 'hold');
+
+-- Read policy must expose the new column set; statuses are read where active.
+drop policy if exists "public can read statuses" on public.status_categories;
+create policy "public can read statuses"
+on public.status_categories for select to anon, authenticated using (active = true);
+
+-- ------------------------------------------------------------
+-- 4. REALTIME on statuses too, so adding/deleting a colour shows up
+--    in other open tabs without a refresh.
+-- ------------------------------------------------------------
+alter table public.status_categories replica identity full;
+
+do $$
+begin
+  begin
+    alter publication supabase_realtime add table public.status_categories;
+  exception when duplicate_object then null;
+  end;
+end $$;
+
+-- ------------------------------------------------------------
+-- 5. VERIFY
+-- ------------------------------------------------------------
+select id, name, color, is_system from public.status_categories order by sort_order;
+select floor, unit_number, carpet_area, super_area from public.units order by floor, unit_number;
